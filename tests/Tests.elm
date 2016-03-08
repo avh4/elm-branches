@@ -22,11 +22,24 @@ all =
         (commits "A" [])
         |> assertEqual (NoChange)
         |> test "no new commits"
-    , merge
-        (commits "A" [])
-        (commits "A" [ "B" ])
-        |> assertEqual (AlreadyAhead)
-        |> test "new commits on local"
+    , suite
+        "new commits on local"
+        [ merge
+            (commits "A" [])
+            (commits "A" [ "B" ])
+            |> assertEqual (AlreadyAhead)
+            |> test "single commit after root"
+        , merge
+            (commits "A" [])
+            (commits "A" [ "B", "C" ])
+            |> assertEqual (AlreadyAhead)
+            |> test "multiple commits"
+        , merge
+            (commits "A" [ "B" ])
+            (commits "A" [ "B", "C" ])
+            |> assertEqual (AlreadyAhead)
+            |> test "single commit"
+        ]
     , merge
         (commits "A" [ "B" ])
         (commits "A" [])

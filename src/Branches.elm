@@ -31,7 +31,7 @@ commit new (Commit parent) =
   Commit
     { id = new
     , parents = []
-    , all = parent.all
+    , all = Set.insert new parent.all
     }
 
 
