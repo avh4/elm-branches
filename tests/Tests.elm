@@ -40,9 +40,27 @@ all =
             |> assertEqual (AlreadyAhead)
             |> test "single commit"
         ]
-    , merge
-        (commits "A" [ "B" ])
-        (commits "A" [])
-        |> assertEqual (FastForward [ "B" ])
-        |> test "new commits on remote"
+    , suite
+        "new commits on remote"
+        [ merge
+            (commits "A" [ "B" ])
+            (commits "A" [])
+            |> assertEqual (FastForward [ "B" ])
+            |> test "single commit after root"
+        , merge
+            (commits "A" [ "B", "C" ])
+            (commits "A" [ "B" ])
+            |> assertEqual (FastForward [ "C" ])
+            |> test "single commit"
+        , merge
+            (commits "A" [ "B", "C", "D" ])
+            (commits "A" [ "B" ])
+            |> assertEqual (FastForward [ "C", "D" ])
+            |> test "two commits"
+        , merge
+            (commits "A" [ "B", "C", "D", "E" ])
+            (commits "A" [ "B" ])
+            |> assertEqual (FastForward [ "C", "D", "E" ])
+            |> test "three commits"
+        ]
     ]

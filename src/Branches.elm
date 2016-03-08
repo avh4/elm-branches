@@ -1,4 +1,4 @@
-module Branches (..) where
+module Branches (MergeResult(..), Commit, initialCommit, commit, merge) where
 
 import Set exposing (Set)
 
@@ -7,6 +7,7 @@ type MergeResult id
   = FastForward (List id)
   | NoChange
   | AlreadyAhead
+  | MergeTODO
 
 
 type Commit comparable
@@ -30,7 +31,7 @@ commit : comparable -> Commit comparable -> Commit comparable
 commit new (Commit parent) =
   Commit
     { id = new
-    , parents = []
+    , parents = [ Commit parent ]
     , all = Set.insert new parent.all
     }
 
@@ -42,4 +43,21 @@ merge (Commit remote) (Commit local) =
   else if Set.member remote.id local.all then
     AlreadyAhead
   else
-    FastForward [ remote.id ]
+    let
+      findFastForwardChain commit acc =
+        case commit.parents of
+          [] ->
+            Just acc
+          [Commit singleParent] ->
+            if Set.member singleParent.id local.all then
+              Just <| commit.id :: acc
+            else
+              findFastForwardChain singleParent (commit.id :: acc)
+          _ ->
+            Nothing
+    in
+      case findFastForwardChain remote [] of
+        Just newCommits ->
+          FastForward newCommits
+        Nothing ->
+          MergeTODO
