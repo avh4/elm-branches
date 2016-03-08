@@ -1,14 +1,35 @@
 module Tests (..) where
 
 import ElmTest exposing (..)
-import String
+import Branches exposing (..)
+
+
+foldl a b c =
+  List.foldl a c b
+
+
+commits first rest =
+  initialCommit first
+    |> foldl commit rest
 
 
 all : Test
 all =
   suite
-    "A Test Suite"
-    [ test "Addition" (assertEqual (3 + 7) 10)
-    , test "String.left" (assertEqual "a" (String.left 1 "abcdefg"))
-    , test "This test should fail" (assert False)
+    "BranchingData"
+    [ merge
+        (commits "A" [])
+        (commits "A" [])
+        |> assertEqual (NoChange)
+        |> test "no new commits"
+    , merge
+        (commits "A" [])
+        (commits "A" [ "B" ])
+        |> assertEqual (AlreadyAhead)
+        |> test "new commits on local"
+    , merge
+        (commits "A" [ "B" ])
+        (commits "A" [])
+        |> assertEqual (FastForward [ "B" ])
+        |> test "new commits on remote"
     ]
