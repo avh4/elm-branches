@@ -7,7 +7,6 @@
         "."
     ],
     "exposed-modules": [
-      "Branches"
     ],
     "dependencies": {
         "elm-lang/core": "3.0.0 <= v < 4.0.0"

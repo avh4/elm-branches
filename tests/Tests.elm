@@ -21,9 +21,9 @@ all =
         (commits "A" [])
         (commits "A" [])
         |> assertEqual (NoChange)
-        |> test "no new commits"
+        |> test "no changes"
     , suite
-        "new commits on local"
+        "changes on local"
         [ merge
             (commits "A" [])
             (commits "A" [ "B" ])
@@ -41,7 +41,7 @@ all =
             |> test "single commit"
         ]
     , suite
-        "new commits on remote"
+        "changes on remote"
         [ merge
             (commits "A" [ "B" ])
             (commits "A" [])
@@ -62,5 +62,18 @@ all =
             (commits "A" [ "B" ])
             |> assertEqual (FastForward [ "C", "D", "E" ])
             |> test "three commits"
+        ]
+    , suite
+        "merges"
+        [ merge
+            (commits "A" [])
+            (commits "B" [])
+            |> assertEqual (Merge Nothing "A" "B")
+            |> test "no common ancestors"
+        , merge
+            (commits "A" [ "B" ])
+            (commits "A" [ "C" ])
+            |> assertEqual (Merge (Just "A") "B" "C")
+            |> test "common ancestor"
         ]
     ]

@@ -7,7 +7,7 @@ type MergeResult id
   = FastForward (List id)
   | NoChange
   | AlreadyAhead
-  | MergeTODO
+  | Merge (Maybe id) id id
 
 
 type Commit comparable
@@ -47,17 +47,22 @@ merge (Commit remote) (Commit local) =
       findFastForwardChain commit acc =
         case commit.parents of
           [] ->
-            Just acc
-          [Commit singleParent] ->
-            if Set.member singleParent.id local.all then
-              Just <| commit.id :: acc
+            Err Nothing
+
+          [ Commit singleParent ] ->
+            if singleParent.id == local.id then
+              Ok <| commit.id :: acc
+            else if Set.member singleParent.id local.all then
+              Err (Just singleParent.id)
             else
               findFastForwardChain singleParent (commit.id :: acc)
+
           _ ->
-            Nothing
+            Err Nothing
     in
       case findFastForwardChain remote [] of
-        Just newCommits ->
+        Ok newCommits ->
           FastForward newCommits
-        Nothing ->
-          MergeTODO
+
+        Err commonAncestor ->
+          Merge commonAncestor remote.id local.id
