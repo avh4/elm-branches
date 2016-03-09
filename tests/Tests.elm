@@ -13,6 +13,21 @@ commits first rest =
     |> foldl commit rest
 
 
+fork : ( a -> b, a -> c ) -> a -> ( b, c )
+fork ( f1, f2 ) a =
+  ( f1 a, f2 a )
+
+
+join : comparable -> ( Commit comparable, Commit comparable ) -> Commit comparable
+join mergeId ( left, right ) =
+  Branches.join left right mergeId
+
+
+assertMerge : MergeResult comparable -> ( Commit comparable, Commit comparable ) -> Assertion
+assertMerge expected ( local, remote ) =
+  assertEqual expected (Branches.merge remote local)
+
+
 all : Test
 all =
   suite
@@ -45,23 +60,41 @@ all =
         [ merge
             (commits "A" [ "B" ])
             (commits "A" [])
-            |> assertEqual (FastForward [ "B" ])
+            |> assertEqual (FastForward "A" "B")
+            |> test "single commit after root"
+        , initialCommit "A"
+            |> fork
+                ( identity
+                , commit "B"
+                )
+            |> assertMerge (FastForward "A" "B")
             |> test "single commit after root"
         , merge
             (commits "A" [ "B", "C" ])
             (commits "A" [ "B" ])
-            |> assertEqual (FastForward [ "C" ])
+            |> assertEqual (FastForward "B" "C")
             |> test "single commit"
         , merge
             (commits "A" [ "B", "C", "D" ])
             (commits "A" [ "B" ])
-            |> assertEqual (FastForward [ "C", "D" ])
+            |> assertEqual (FastForward "B" "D")
             |> test "two commits"
         , merge
             (commits "A" [ "B", "C", "D", "E" ])
             (commits "A" [ "B" ])
-            |> assertEqual (FastForward [ "C", "D", "E" ])
+            |> assertEqual (FastForward "B" "E")
             |> test "three commits"
+        , initialCommit "A"
+            |> fork
+                ( identity
+                , fork
+                    ( commit "C"
+                    , commit "D"
+                    )
+                    >> join "m1"
+                )
+            |> assertMerge (FastForward "A" "m1")
+            |> test "containing merges"
         ]
     , suite
         "merges"

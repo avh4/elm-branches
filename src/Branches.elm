@@ -1,10 +1,10 @@
-module Branches (MergeResult(..), Commit, initialCommit, commit, merge) where
+module Branches (MergeResult(..), Commit, initialCommit, commit, merge, join) where
 
 import Set exposing (Set)
 
 
 type MergeResult id
-  = FastForward (List id)
+  = FastForward id id
   | NoChange
   | AlreadyAhead
   | Merge (Maybe id) id id
@@ -36,33 +36,41 @@ commit new (Commit parent) =
     }
 
 
+join : Commit comparable -> Commit comparable -> comparable -> Commit comparable
+join (Commit left) (Commit right) new =
+  Commit
+    { id = new
+    , parents = [ Commit left, Commit right ]
+    , all =
+        Set.union left.all right.all
+          |> Set.insert new
+    }
+
+
 merge : Commit comparable -> Commit comparable -> MergeResult comparable
 merge (Commit remote) (Commit local) =
   if remote.id == local.id then
     NoChange
+  else if Set.member local.id remote.all then
+    FastForward local.id remote.id
   else if Set.member remote.id local.all then
     AlreadyAhead
   else
     let
-      findFastForwardChain commit acc =
+      findCommonAncestor commit =
         case commit.parents of
           [] ->
-            Err Nothing
+            Nothing
 
           [ Commit singleParent ] ->
             if singleParent.id == local.id then
-              Ok <| commit.id :: acc
+              Just commit.id
             else if Set.member singleParent.id local.all then
-              Err (Just singleParent.id)
+              Just singleParent.id
             else
-              findFastForwardChain singleParent (commit.id :: acc)
+              findCommonAncestor singleParent
 
           _ ->
-            Err Nothing
+            Nothing
     in
-      case findFastForwardChain remote [] of
-        Ok newCommits ->
-          FastForward newCommits
-
-        Err commonAncestor ->
-          Merge commonAncestor remote.id local.id
+      Merge (findCommonAncestor remote) remote.id local.id
